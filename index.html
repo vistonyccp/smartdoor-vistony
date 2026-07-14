@@ -106,27 +106,35 @@ Si necesita atención presione el botón.
 
 async function timbre() {
 
-    const url = "https://script.google.com/macros/s/AKfycbyhrapL13WAmhantKS4p6wDRLEqCC_lmptLJ9fSzkbjbUbxVEJp3eCQO1qEb0xWMa-jcA/exec";
+    const respuesta = document.getElementById("respuesta");
+    respuesta.innerHTML = "⏳ Enviando aviso...";
 
     try {
 
-        await fetch(url, {
+        const r = await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/", {
             method: "POST",
-            body: JSON.stringify({
-                mensaje: "Hay un cliente esperando en la puerta principal."
-            }),
             headers: {
-                "Content-Type": "text/plain;charset=utf-8"
-            }
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                mensaje: "👤 Hay un cliente esperando en la puerta principal."
+            })
         });
 
-        alert("✅ Aviso enviado correctamente.");
+        const texto = await r.text();
 
-    } catch (error) {
+        if (r.ok) {
+            respuesta.innerHTML = "✅ Hemos recibido tu aviso. En un momento te atenderemos.";
+            console.log(texto);
+        } else {
+            respuesta.innerHTML = "❌ Error: " + texto;
+            console.log(texto);
+        }
 
-        alert("❌ No fue posible enviar el aviso.");
+    } catch (e) {
 
-        console.log(error);
+        console.error(e);
+        respuesta.innerHTML = "❌ Error de conexión.";
 
     }
 
