@@ -104,10 +104,31 @@ Si necesita atención presione el botón.
 
 <script>
 
-function timbre(){
+async function timbre() {
 
-document.getElementById("respuesta").innerHTML=
-"✅ Hemos recibido tu aviso. En un momento te atenderemos.";
+    const url = "https://script.google.com/macros/s/AKfycbyhrapL13WAmhantKS4p6wDRLEqCC_lmptLJ9fSzkbjbUbxVEJp3eCQO1qEb0xWMa-jcA/exec";
+
+    try {
+
+        await fetch(url, {
+            method: "POST",
+            body: JSON.stringify({
+                mensaje: "Hay un cliente esperando en la puerta principal."
+            }),
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8"
+            }
+        });
+
+        alert("✅ Aviso enviado correctamente.");
+
+    } catch (error) {
+
+        alert("❌ No fue posible enviar el aviso.");
+
+        console.log(error);
+
+    }
 
 }
 
