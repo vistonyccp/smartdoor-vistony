@@ -7,10 +7,14 @@
 
 <style>
 
+*{
+    box-sizing:border-box;
+}
+
 body{
     margin:0;
-    font-family:Arial, Helvetica, sans-serif;
-    background:#f5f5f5;
+    font-family:Arial,Helvetica,sans-serif;
+    background:#f2f2f2;
     display:flex;
     justify-content:center;
     align-items:center;
@@ -18,59 +22,127 @@ body{
 }
 
 .card{
+
+    width:95%;
+    max-width:480px;
+
     background:white;
-    width:90%;
-    max-width:450px;
-    border-radius:20px;
+
+    border-radius:18px;
+
     padding:30px;
-    box-shadow:0 4px 20px rgba(0,0,0,.15);
+
+    box-shadow:0 5px 20px rgba(0,0,0,.15);
+
     text-align:center;
+
 }
 
 .logo{
-    width:100%;
-    max-width:250px;
+
+    width:240px;
+
+    max-width:100%;
+
     margin-bottom:20px;
+
 }
 
 .estado{
-    color:green;
-    font-weight:bold;
+
+    background:#eef8ee;
+
+    border-radius:10px;
+
+    padding:15px;
+
     margin-bottom:20px;
+
+    font-weight:bold;
+
+    line-height:1.5;
+
 }
 
-.boton{
+input,textarea{
+
     width:100%;
+
+    padding:12px;
+
+    margin-top:10px;
+
+    border-radius:8px;
+
+    border:1px solid #ccc;
+
+    font-size:15px;
+
+}
+
+textarea{
+
+    height:100px;
+
+    resize:none;
+
+}
+
+button{
+
+    width:100%;
+
+    padding:16px;
+
     border:none;
-    border-radius:12px;
-    padding:18px;
-    margin:10px 0;
-    font-size:18px;
+
+    border-radius:10px;
+
     cursor:pointer;
+
+    font-size:18px;
+
+    margin-top:15px;
+
 }
 
 .timbre{
+
     background:#d71920;
+
     color:white;
+
 }
 
 .secundario{
-    background:#efefef;
+
+    background:#ececec;
+
 }
 
-.mensaje{
+#respuesta{
+
     margin-top:20px;
-    color:#333;
+
+    font-weight:bold;
+
+}
+
+hr{
+
+    margin:30px 0;
+
 }
 
 </style>
 
 </head>
+
 <body>
 
 <div class="card">
 
-<img src="logo-vistony.png" class="logo" alt="Vistony">
+<img src="logo-vistony.png" class="logo">
 
 <div id="estado" class="estado"></div>
 
@@ -80,43 +152,42 @@ body{
 Si necesita atención presione el botón.
 </p>
 
-<button class="boton timbre" onclick="timbre()">
+<button class="timbre" onclick="timbre()">
 🔔 ESTOY EN LA PUERTA
 </button>
 
-<hr style="margin:25px 0">
+<hr>
 
 <h3>📩 Dejar un mensaje</h3>
 
-<input id="nombre" placeholder="Nombre"
-style="width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #ccc;">
+<input id="nombre" placeholder="Nombre">
 
-<input id="empresa" placeholder="Empresa"
-style="width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #ccc;">
+<input id="empresa" placeholder="Empresa">
 
-<input id="telefono" placeholder="Teléfono"
-style="width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #ccc;">
+<input id="telefono" placeholder="Teléfono">
 
-<textarea id="mensaje"
-placeholder="Escriba su mensaje..."
-style="width:100%;padding:12px;height:90px;border-radius:8px;border:1px solid #ccc;"></textarea>
+<textarea id="mensaje" placeholder="Escriba su mensaje..."></textarea>
 
+<button class="secundario" onclick="enviarMensaje()">
+📨 Enviar mensaje
+</button>
 
-<div id="respuesta" class="mensaje"></div>
+<div id="respuesta"></div>
 
 </div>
 
 <script>
-const HORA_INICIO = 8;
-const HORA_FIN = 17;
 
-const BODEGA_DISPONIBLE = true;
+const HORA_INICIO=8;
+const HORA_FIN=17;
+
+const BODEGA_DISPONIBLE=true;
 
 function actualizarEstado(){
 
-    const ahora = new Date();
+    const ahora=new Date();
 
-    const hora = ahora.getHours();
+    const hora=ahora.getHours();
 
     let texto="";
 
@@ -145,43 +216,51 @@ function actualizarEstado(){
 }
 
 actualizarEstado();
-async function timbre() {
 
-    const respuesta = document.getElementById("respuesta");
-    respuesta.innerHTML = "⏳ Enviando aviso...";
+async function timbre(){
 
-    try {
+    const respuesta=document.getElementById("respuesta");
 
-        const r = await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
+    respuesta.innerHTML="⏳ Enviando aviso...";
+
+    try{
+
+        const r=await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/",{
+
+            method:"POST",
+
+            headers:{
+
+                "Content-Type":"application/json"
+
             },
-            body: JSON.stringify({
-                mensaje: "👤 Hay un cliente esperando en la puerta principal."
+
+            body:JSON.stringify({
+
+                mensaje:"👤 Hay un cliente esperando en la puerta principal."
+
             })
+
         });
 
-        const texto = await r.text();
+        if(r.ok){
 
-        if (r.ok) {
-            respuesta.innerHTML = "✅ Hemos recibido tu aviso. En un momento te atenderemos.";
-            console.log(texto);
-        } else {
-            respuesta.innerHTML = "❌ Error: " + texto;
-            console.log(texto);
+            respuesta.innerHTML="✅ Aviso enviado correctamente.";
+
+        }else{
+
+            respuesta.innerHTML="❌ No fue posible enviar el aviso.";
+
         }
 
-    } catch (e) {
+    }catch(e){
 
-        console.error(e);
-        respuesta.innerHTML = "❌ Error de conexión.";
+        respuesta.innerHTML="❌ Error de conexión.";
 
     }
 
 }
 
-</script>
 async function enviarMensaje(){
 
     const nombre=document.getElementById("nombre").value;
@@ -202,7 +281,7 @@ async function enviarMensaje(){
 
     const respuesta=document.getElementById("respuesta");
 
-    respuesta.innerHTML="⏳ Enviando...";
+    respuesta.innerHTML="⏳ Enviando mensaje...";
 
     try{
 
@@ -255,5 +334,8 @@ async function enviarMensaje(){
     }
 
 }
+
+</script>
+
 </body>
 </html>
