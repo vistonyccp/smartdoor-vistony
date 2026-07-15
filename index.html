@@ -72,9 +72,7 @@ body{
 
 <img src="logo-vistony.png" class="logo" alt="Vistony">
 
-<div class="estado">
-🟢 Disponible
-</div>
+<div id="estado" class="estado"></div>
 
 <h2>Bienvenido</h2>
 
@@ -86,24 +84,67 @@ Si necesita atención presione el botón.
 🔔 ESTOY EN LA PUERTA
 </button>
 
-<button class="boton secundario">
-🎤 Mensaje de voz
-</button>
+<hr style="margin:25px 0">
 
-<button class="boton secundario">
-📹 Mensaje de video
-</button>
+<h3>📩 Dejar un mensaje</h3>
 
-<button class="boton secundario">
-💬 Escribir mensaje
-</button>
+<input id="nombre" placeholder="Nombre"
+style="width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #ccc;">
+
+<input id="empresa" placeholder="Empresa"
+style="width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #ccc;">
+
+<input id="telefono" placeholder="Teléfono"
+style="width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #ccc;">
+
+<textarea id="mensaje"
+placeholder="Escriba su mensaje..."
+style="width:100%;padding:12px;height:90px;border-radius:8px;border:1px solid #ccc;"></textarea>
+
 
 <div id="respuesta" class="mensaje"></div>
 
 </div>
 
 <script>
+const HORA_INICIO = 8;
+const HORA_FIN = 17;
 
+const BODEGA_DISPONIBLE = true;
+
+function actualizarEstado(){
+
+    const ahora = new Date();
+
+    const hora = ahora.getHours();
+
+    let texto="";
+
+    if(hora>=HORA_INICIO && hora<HORA_FIN){
+
+        texto+="🟢 Horario de atención<br>";
+
+    }else{
+
+        texto+="🔴 Fuera de horario<br>";
+
+    }
+
+    if(BODEGA_DISPONIBLE){
+
+        texto+="📦 Bodega disponible";
+
+    }else{
+
+        texto+="⚠️ No hay personal en bodega";
+
+    }
+
+    document.getElementById("estado").innerHTML=texto;
+
+}
+
+actualizarEstado();
 async function timbre() {
 
     const respuesta = document.getElementById("respuesta");
@@ -141,6 +182,78 @@ async function timbre() {
 }
 
 </script>
+async function enviarMensaje(){
 
+    const nombre=document.getElementById("nombre").value;
+
+    const empresa=document.getElementById("empresa").value;
+
+    const telefono=document.getElementById("telefono").value;
+
+    const mensaje=document.getElementById("mensaje").value;
+
+    if(nombre=="" || mensaje==""){
+
+        alert("Ingrese al menos su nombre y un mensaje.");
+
+        return;
+
+    }
+
+    const respuesta=document.getElementById("respuesta");
+
+    respuesta.innerHTML="⏳ Enviando...";
+
+    try{
+
+        const r=await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/",{
+
+            method:"POST",
+
+            headers:{
+
+                "Content-Type":"application/json"
+
+            },
+
+            body:JSON.stringify({
+
+                mensaje:
+`📩 NUEVO MENSAJE
+
+👤 ${nombre}
+
+🏢 ${empresa}
+
+📞 ${telefono}
+
+💬 ${mensaje}`
+
+            })
+
+        });
+
+        if(r.ok){
+
+            respuesta.innerHTML="✅ Mensaje enviado correctamente.";
+
+            document.getElementById("nombre").value="";
+            document.getElementById("empresa").value="";
+            document.getElementById("telefono").value="";
+            document.getElementById("mensaje").value="";
+
+        }else{
+
+            respuesta.innerHTML="❌ No fue posible enviar el mensaje.";
+
+        }
+
+    }catch(e){
+
+        respuesta.innerHTML="❌ Error de conexión.";
+
+    }
+
+}
 </body>
 </html>
