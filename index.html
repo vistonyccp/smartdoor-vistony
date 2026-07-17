@@ -42,6 +42,7 @@
             margin-bottom: 15px;
             font-weight: bold;
             line-height: 1.5;
+            transition: background 0.3s ease;
         }
 
         .info-horario {
@@ -132,7 +133,7 @@
 <div class="card">
     <img src="logo-vistony.png" class="logo" alt="Logo Vistony">
     
-    <!-- Estado Dinámico (Abierto/Cerrado) -->
+    <!-- Estado Dinámico (Abierto/Cerrado/Fuerza Mayor) -->
     <div id="estado" class="estado">⏳ Evaluando sistema...</div>
 
     <!-- Panel Informativo de Horarios y Reloj en Vivo -->
@@ -168,28 +169,33 @@
 </div>
 
 <script>
-    // Configuración operativa base
+    // ==========================================
+    // CONFIGURACIÓN OPERATIVA CENTRAL
+    // ==========================================
     const HORA_INICIO = 8;
-    const BODEGA_DISPONIBLE = true; 
     const TIEMPO_BLOQUEO = 30; 
 
-    // Nueva lógica horaria dividida por días
+    // 💡 INTERRUPTOR DE FUERZA MAYOR:
+    // true  = Operación Normal (revisa los horarios automáticos).
+    // false = CERRADO AUTOMÁTICO por emergencia/fuerza mayor.
+    const BODEGA_DISPONIBLE = true; 
+
+    // Evalúa si está en el horario comercial normal
     function esHorarioLaboral() {
         const ahora = new Date();
         const hora = ahora.getHours();
         const diaSemana = ahora.getDay(); // 0=Dom, 1=Lun, 2=Mar, 3=Mié, 4=Jue, 5=Vie, 6=Sáb
 
-        // Fines de semana cerrado
         if (diaSemana === 0 || diaSemana === 6) {
             return false;
         }
 
-        // Tramo 1: Lunes y Martes (Cierre a las 17:00)
+        // Lun y Mar: Cierre 17:00
         if (diaSemana === 1 || diaSemana === 2) {
             return (hora >= HORA_INICIO && hora < 17);
         }
 
-        // Tramo 2: Miércoles, Jueves y Viernes (Cierre a las 16:00)
+        // Mié, Jue y Vie: Cierre 16:00
         if (diaSemana === 3 || diaSemana === 4 || diaSemana === 5) {
             return (hora >= HORA_INICIO && hora < 16);
         }
@@ -197,37 +203,48 @@
         return false;
     }
 
-    // Gestiona el reloj y refresca el estado del cartel verde/rojo
+    // Gestiona la hora y los cambios visuales en el cartel y el botón
     function inicializarRelojYEstado(){
         const ahora = new Date();
+        const botonTimbre = document.querySelector(".timbre");
         
-        // Renderizar Fecha y Hora en vivo para el cliente
+        // 1. Reloj en vivo
         const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'short' };
         const fechaTexto = ahora.toLocaleDateString('es-CL', opcionesFecha);
-        const horaTexto = maxString = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        
+        const horaTexto = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         const fechaCapitalizada = fechaTexto.charAt(0).toUpperCase() + fechaTexto.slice(1);
         document.getElementById("reloj").innerHTML = `🕒 ${fechaCapitalizada} | ${horaTexto}`;
 
-        // Renderizar el cartel Verde/Rojo según el día y hora exactos
+        // 2. Control total del cartel indicador y bloqueo del botón
         const estadoDiv = document.getElementById("estado");
-        let texto = "";
 
-        if(esHorarioLaboral()){
-            texto += "🟢 Horario de atención<br>";
-            estadoDiv.style.backgroundColor = "#eef8ee";
-        } else {
-            texto += "🔴 Fuera de horario comercial<br>";
+        if (!BODEGA_DISPONIBLE) {
+            // SI HAY FUERZA MAYOR (Bloqueo absoluto)
+            estadoDiv.innerHTML = "⚠️ Cerrado por fuerza mayor<br>📦 Bodega no operativa temporalmente";
             estadoDiv.style.backgroundColor = "#fff0f0";
-        }
-
-        if(BODEGA_DISPONIBLE){
-            texto += "📦 Bodega disponible";
+            estadoDiv.style.color = "#d71920";
+            
+            // Solo modificamos el botón si no está corriendo una cuenta regresiva previa
+            if (!botonTimbre.disabled || botonTimbre.innerHTML === "🔔 ESTOY EN LA PUERTA") {
+                botonTimbre.disabled = true;
+            }
         } else {
-            texto += "⚠️ No hay personal en bodega";
+            // OPERACIÓN NORMAL (Depende de la hora del reloj)
+            estadoDiv.style.color = "#000";
+            if (esHorarioLaboral()) {
+                estadoDiv.innerHTML = "🟢 Horario de atención<br>📦 Bodega disponible";
+                estadoDiv.style.backgroundColor = "#eef8ee";
+                if (botonTimbre.innerHTML === "🔔 ESTOY EN LA PUERTA") {
+                    botonTimbre.disabled = false;
+                }
+            } else {
+                estadoDiv.innerHTML = "🔴 Fuera de horario comercial<br>⚠️ No hay personal en bodega";
+                estadoDiv.style.backgroundColor = "#fff0f0";
+                if (botonTimbre.innerHTML === "🔔 ESTOY EN LA PUERTA") {
+                    botonTimbre.disabled = true;
+                }
+            }
         }
-
-        estadoDiv.innerHTML = texto;
     }
 
     function limpiarRespuesta(ms = 5000) {
@@ -241,13 +258,17 @@
         const botonTimbre = document.querySelector(".timbre");
         const respuesta = document.getElementById("respuesta");
 
+        // Doble verificación de seguridad
+        if (!BODEGA_DISPONIBLE) {
+            respuesta.innerHTML = "<span style='color: #d71920;'>❌ Operación suspendida temporalmente por fuerza mayor.</span>";
+            return;
+        }
         if (!esHorarioLaboral()) {
             respuesta.innerHTML = "<span style='color: #d71920;'>❌ El timbre está desactivado fuera del horario de atención.</span>";
             return;
         }
 
         const horaAlerta = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-
         botonTimbre.disabled = true;
         respuesta.innerHTML = "⏳ Enviando aviso...";
 
@@ -269,8 +290,9 @@
                     botonTimbre.innerHTML = `⏳ ESPERE (${segundosRestantes}s)`;
                     if(segundosRestantes <= 0) {
                         clearInterval(intervalo);
-                        botonTimbre.disabled = false;
+                        botonTimbre.disabled = !BODEGA_DISPONIBLE && esHorarioLaboral(); 
                         botonTimbre.innerHTML = "🔔 ESTOY EN LA PUERTA";
+                        inicializarRelojYEstado(); // Refresca estado real inmediatamente al terminar
                     }
                 }, 1000);
 
@@ -329,10 +351,8 @@
         limpiarRespuesta(5000);
     }
 
-    // Ejecución inicial
+    // Inicialización del ciclo
     inicializarRelojYEstado();
-
-    // Actualización precisa cada 1 segundo
     setInterval(inicializarRelojYEstado, 1000);
 </script>
 
