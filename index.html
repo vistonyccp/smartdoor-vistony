@@ -3,357 +3,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartDoor Vistony</title>
+    <title>SmartDoor Vistony - Cámara</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
-
+        * { box-sizing: border-box; }
         body {
-            margin: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f2f2f2;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            margin: 0; font-family: Arial, sans-serif; background: #f2f2f2;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
         }
-
         .card {
-            width: 95%;
-            max-width: 480px;
-            background: white;
-            border-radius: 18px;
-            padding: 30px;
-            box-shadow: 0 5px 20px rgba(0,0,0,.15);
-            text-align: center;
+            width: 95%; max-width: 480px; background: white; border-radius: 18px;
+            padding: 30px; box-shadow: 0 5px 20px rgba(0,0,0,.15); text-align: center;
         }
-
-        .logo {
-            width: 240px;
-            max-width: 100%;
-            margin-bottom: 20px;
+        .logo { width: 240px; max-width: 100%; margin-bottom: 20px; }
+        
+        /* Contenedor de la cámara */
+        .camera-container {
+            width: 100%; max-width: 320px; height: 240px; background: #000;
+            margin: 0 auto 20px auto; border-radius: 12px; overflow: hidden;
+            position: relative; border: 3px solid #eee;
         }
-
-        .estado {
-            background: #eef8ee;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            font-weight: bold;
-            line-height: 1.5;
-            transition: background 0.3s ease;
-        }
-
-        .info-horario {
-            background: #fcfcfc;
-            border: 1px solid #e5e5e5;
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            color: #555;
-            line-height: 1.5;
-            text-align: left;
-        }
-
-        .reloj-text {
-            border-top: 1px dashed #ddd;
-            margin-top: 8px;
-            padding-top: 8px;
-            text-align: center;
-        }
-
-        .reloj-vivo {
-            font-weight: bold;
-            color: #333;
-            font-size: 15px;
-            letter-spacing: 0.5px;
-            display: inline-block;
-            margin-top: 2px;
-        }
-
-        input, textarea {
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-size: 15px;
-        }
-
-        textarea {
-            height: 100px;
-            resize: none;
-        }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        canvas { display: none; } /* Oculto, solo se usa para congelar la foto */
 
         button {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 18px;
-            margin-top: 15px;
+            width: 100%; padding: 16px; border: none; border-radius: 10px;
+            cursor: pointer; font-size: 18px; font-weight: bold; margin-top: 15px;
             transition: background 0.3s ease;
         }
-
-        button:disabled {
-            background: #ccc !important;
-            color: #666 !important;
-            cursor: not-allowed;
-        }
-
-        .timbre {
-            background: #d71920;
-            color: white;
-            font-weight: bold;
-        }
-
-        .secundario {
-            background: #ececec;
-            color: #333;
-        }
-
-        #respuesta {
-            margin-top: 20px;
-            font-weight: bold;
-            min-height: 24px;
-        }
-
-        hr {
-            margin: 30px 0;
-            border: 0;
-            border-top: 1px solid #eee;
-        }
+        button:disabled { background: #ccc !important; color: #666 !important; cursor: not-allowed; }
+        .timbre { background: #d71920; color: white; }
+        #respuesta { margin-top: 20px; font-weight: bold; min-height: 24px; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <img src="logo-vistony.png" class="logo" alt="Logo Vistony">
-    
-    <!-- Estado Dinámico (Abierto/Cerrado/Fuerza Mayor) -->
-    <div id="estado" class="estado">⏳ Evaluando sistema...</div>
+    <h2>Timbre de Acceso</h2>
+    <p>Por favor, ubíquese frente a la pantalla y presione el botón para avisar su llegada.</p>
 
-    <!-- Panel Informativo de Horarios y Reloj en Vivo -->
-    <div class="info-horario">
-        📅 <strong>Horario de Atención Bodega:</strong><br>
-        • Lun a Mar: 08:00 a 17:00 h<br>
-        • Mié a Vie: 08:00 a 16:00 h
-        <div class="reloj-text">
-            <div id="reloj" class="reloj-vivo">🕒 Cargando hora...</div>
-        </div>
+    <!-- Vista previa de la cámara web/tablet -->
+    <div class="camera-container">
+        <video id="video" autoplay playsinline muted></video>
     </div>
+    
+    <!-- Canvas oculto para capturar el frame -->
+    <canvas id="canvas" width="640" height="480"></canvas>
 
-    <h2>Bienvenido</h2>
-    <p>Si necesita atención presione el botón.</p>
-
-    <button class="timbre" onclick="timbre()">
-        🔔 ESTOY EN LA PUERTA
-    </button>
-
-    <hr>
-
-    <h3>📩 Dejar un mensaje</h3>
-    <input id="nombre" placeholder="Nombre">
-    <input id="empresa" placeholder="Empresa">
-    <input id="telefono" placeholder="Teléfono">
-    <textarea id="mensaje" placeholder="Escriba su mensaje..."></textarea>
-
-    <button class="secundario" onclick="enviarMensaje()">
-        📨 Enviar mensaje
+    <button class="timbre" onclick="tomarFotoYTimbrar()">
+        🔔 CAPTURAR FOTO Y AVISAR
     </button>
 
     <div id="respuesta"></div>
 </div>
 
 <script>
-    // ==========================================
-    // CONFIGURACIÓN OPERATIVA CENTRAL
-    // ==========================================
-    const HORA_INICIO = 8;
-    const TIEMPO_BLOQUEO = 30; 
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const respuesta = document.getElementById('respuesta');
+    const botonTimbre = document.querySelector('.timbre');
 
-    // 💡 INTERRUPTOR DE FUERZA MAYOR:
-    // true  = Operación Normal (revisa los horarios automáticos).
-    // false = CERRADO AUTOMÁTICO por emergencia/fuerza mayor.
-    const BODEGA_DISPONIBLE = true; 
-
-    // Evalúa si está en el horario comercial normal
-    function esHorarioLaboral() {
-        const ahora = new Date();
-        const hora = ahora.getHours();
-        const diaSemana = ahora.getDay(); // 0=Dom, 1=Lun, 2=Mar, 3=Mié, 4=Jue, 5=Vie, 6=Sáb
-
-        if (diaSemana === 0 || diaSemana === 6) {
-            return false;
-        }
-
-        // Lun y Mar: Cierre 17:00
-        if (diaSemana === 1 || diaSemana === 2) {
-            return (hora >= HORA_INICIO && hora < 17);
-        }
-
-        // Mié, Jue y Vie: Cierre 16:00
-        if (diaSemana === 3 || diaSemana === 4 || diaSemana === 5) {
-            return (hora >= HORA_INICIO && hora < 16);
-        }
-
-        return false;
-    }
-
-    // Gestiona la hora y los cambios visuales en el cartel y el botón
-    function inicializarRelojYEstado(){
-        const ahora = new Date();
-        const botonTimbre = document.querySelector(".timbre");
-        
-        // 1. Reloj en vivo
-        const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'short' };
-        const fechaTexto = ahora.toLocaleDateString('es-CL', opcionesFecha);
-        const horaTexto = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        const fechaCapitalizada = fechaTexto.charAt(0).toUpperCase() + fechaTexto.slice(1);
-        document.getElementById("reloj").innerHTML = `🕒 ${fechaCapitalizada} | ${horaTexto}`;
-
-        // 2. Control total del cartel indicador y bloqueo del botón
-        const estadoDiv = document.getElementById("estado");
-
-        if (!BODEGA_DISPONIBLE) {
-            // SI HAY FUERZA MAYOR (Bloqueo absoluto)
-            estadoDiv.innerHTML = "⚠️ Cerrado por fuerza mayor<br>📦 Bodega no operativa temporalmente";
-            estadoDiv.style.backgroundColor = "#fff0f0";
-            estadoDiv.style.color = "#d71920";
-            
-            // Solo modificamos el botón si no está corriendo una cuenta regresiva previa
-            if (!botonTimbre.disabled || botonTimbre.innerHTML === "🔔 ESTOY EN LA PUERTA") {
-                botonTimbre.disabled = true;
-            }
-        } else {
-            // OPERACIÓN NORMAL (Depende de la hora del reloj)
-            estadoDiv.style.color = "#000";
-            if (esHorarioLaboral()) {
-                estadoDiv.innerHTML = "🟢 Horario de atención<br>📦 Bodega disponible";
-                estadoDiv.style.backgroundColor = "#eef8ee";
-                if (botonTimbre.innerHTML === "🔔 ESTOY EN LA PUERTA") {
-                    botonTimbre.disabled = false;
-                }
-            } else {
-                estadoDiv.innerHTML = "🔴 Fuera de horario comercial<br>⚠️ No hay personal en bodega";
-                estadoDiv.style.backgroundColor = "#fff0f0";
-                if (botonTimbre.innerHTML === "🔔 ESTOY EN LA PUERTA") {
-                    botonTimbre.disabled = true;
-                }
-            }
+    // 1. Encender la cámara automáticamente al abrir la página
+    async function iniciarCamara() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { width: 640, height: 480, facingMode: "user" }, // "user" prefiere la cámara frontal
+                audio: false 
+            });
+            video.srcObject = stream;
+        } catch (error) {
+            console.error("Error al acceder a la cámara:", error);
+            respuesta.innerHTML = "<span style='color:red;'>⚠️ Error: Se requiere acceso a la cámara para usar el timbre.</span>";
+            botonTimbre.disabled = true;
         }
     }
 
-    function limpiarRespuesta(ms = 5000) {
-        setTimeout(() => {
-            document.getElementById("respuesta").innerHTML = "";
-        }, ms);
-    }
+    // Iniciar cámara al cargar
+    iniciarCamara();
 
-    // Acción del Timbre
-    async function timbre(){
-        const botonTimbre = document.querySelector(".timbre");
-        const respuesta = document.getElementById("respuesta");
-
-        // Doble verificación de seguridad
-        if (!BODEGA_DISPONIBLE) {
-            respuesta.innerHTML = "<span style='color: #d71920;'>❌ Operación suspendida temporalmente por fuerza mayor.</span>";
-            return;
-        }
-        if (!esHorarioLaboral()) {
-            respuesta.innerHTML = "<span style='color: #d71920;'>❌ El timbre está desactivado fuera del horario de atención.</span>";
-            return;
-        }
-
-        const horaAlerta = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+    // 2. Capturar la foto y mandarla como archivo binario
+    async function tomarFotoYTimbrar() {
         botonTimbre.disabled = true;
-        respuesta.innerHTML = "⏳ Enviando aviso...";
+        respuesta.innerHTML = "⏳ Capturando fotografía y enviando aviso...";
+        respuesta.style.color = "#333";
 
-        try {
-            const r = await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    mensaje: `🔔 *¡ALERTA DE TIMBRE!*\n👤 Un cliente ha llegado y espera en la puerta principal.\n⏰ Hora: ${horaAlerta}`
-                })
-            });
+        // Dibujar el cuadro actual del video en el canvas oculto
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            if(r.ok){
-                respuesta.innerHTML = "<span style='color: green;'>✅ Aviso enviado correctamente. Por favor, espere.</span>";
-                
-                let segundosRestantes = TIEMPO_BLOQUEO;
-                const intervalo = setInterval(() => {
-                    segundosRestantes--;
-                    botonTimbre.innerHTML = `⏳ ESPERE (${segundosRestantes}s)`;
-                    if(segundosRestantes <= 0) {
-                        clearInterval(intervalo);
-                        botonTimbre.disabled = !BODEGA_DISPONIBLE && esHorarioLaboral(); 
-                        botonTimbre.innerHTML = "🔔 ESTOY EN LA PUERTA";
-                        inicializarRelojYEstado(); // Refresca estado real inmediatamente al terminar
-                    }
-                }, 1000);
-
-            } else {
-                respuesta.innerHTML = "<span style='color: #d71920;'>❌ No fue posible enviar el aviso.</span>";
+        // Convertir el canvas a un archivo Blob (JPEG)
+        canvas.toBlob(async (blob) => {
+            if (!blob) {
+                respuesta.innerHTML = "<span style='color:red;'>❌ Error al procesar la imagen.</span>";
                 botonTimbre.disabled = false;
+                return;
             }
-        } catch(e) {
-            respuesta.innerHTML = "<span style='color: #d71920;'>❌ Error de conexión con el servidor.</span>";
-            botonTimbre.disabled = false;
-        }
 
-        limpiarRespuesta(6000);
-    }
+            // Crear un formulario virtual para enviar el archivo binario
+            const formData = new FormData();
+            formData.append('foto', blob, 'cliente.jpg');
 
-    // Acción del Formulario
-    async function enviarMensaje(){
-        const botonEnviar = document.querySelector(".secundario");
-        const nombre = document.getElementById("nombre").value.trim();
-        const empresa = document.getElementById("empresa").value.trim();
-        const telefono = document.getElementById("telefono").value.trim();
-        const mensaje = document.getElementById("mensaje").value.trim();
+            try {
+                // Enviar al Worker de Cloudflare
+                const r = await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/", {
+                    method: "POST",
+                    body: formData // Nota: Al usar FormData NO debes poner headers de Content-Type, el navegador lo hace solo
+                });
 
-        if(nombre == "" || mensaje == ""){
-            alert("Por favor, ingrese al menos su nombre y el mensaje.");
-            return;
-        }
-
-        const respuesta = document.getElementById("respuesta");
-        botonEnviar.disabled = true;
-        respuesta.innerHTML = "⏳ Enviando mensaje...";
-
-        try {
-            const r = await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    mensaje: `📩 *NUEVO MENSAJE RECIBIDO*\n\n👤 *Nombre:* ${nombre}\n🏢 *Empresa:* ${empresa || 'No especificada'}\n📞 *Teléfono:* ${telefono || 'No especificado'}\n💬 *Mensaje:* ${mensaje}`
-                })
-            });
-
-            if(r.ok){
-                respuesta.innerHTML = "<span style='color: green;'>✅ Mensaje enviado correctamente.</span>";
-                document.getElementById("nombre").value = "";
-                document.getElementById("empresa").value = "";
-                document.getElementById("telefono").value = "";
-                document.getElementById("mensaje").value = "";
-            } else {
-                respuesta.innerHTML = "<span style='color: #d71920;'>❌ No fue posible enviar el mensaje.</span>";
+                if (r.ok) {
+                    respuesta.innerHTML = "<span style='color:green;'>✅ Foto enviada. Personal notificado.</span>";
+                } else {
+                    respuesta.innerHTML = "<span style='color:red;'>❌ No se pudo enviar el aviso a la bodega.</span>";
+                }
+            } catch (e) {
+                respuesta.innerHTML = "<span style='color:red;'>❌ Error de conexión con el servidor.</span>";
             }
-        } catch(e) {
-            respuesta.innerHTML = "<span style='color: #d71920;'>❌ Error de conexión.</span>";
-        }
 
-        botonEnviar.disabled = false;
-        limpiarRespuesta(5000);
+            // Desbloquear botón tras 10 segundos
+            setTimeout(() => {
+                botonTimbre.disabled = false;
+                respuesta.innerHTML = "";
+            }, 10000);
+
+        }, 'image/jpeg', 0.85); // 0.85 es la calidad de compresión (buena resolución, poco peso)
     }
-
-    // Inicialización del ciclo
-    inicializarRelojYEstado();
-    setInterval(inicializarRelojYEstado, 1000);
 </script>
 
 </body>
