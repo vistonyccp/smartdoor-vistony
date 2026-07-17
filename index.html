@@ -189,7 +189,7 @@
 
             try {
                 // LLAMADO AL WORKER (Sin headers forzados a mano)
-                const r = await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/", {
+                const r = await fetch("/index", {
                     method: "POST",
                     body: formData 
                 });
