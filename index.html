@@ -1,141 +1,293 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SmartDoor Vistony</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartDoor Vistony</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #f2f2f2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .card {
+            width: 95%;
+            max-width: 480px;
+            background: white;
+            border-radius: 18px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0,0,0,.15);
+            text-align: center;
+        }
+
+        .logo {
+            width: 240px;
+            max-width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .estado {
+            background: #eef8ee;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            line-height: 1.5;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 15px;
+        }
+
+        textarea {
+            height: 100px;
+            resize: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            margin-top: 15px;
+            transition: background 0.3s ease;
+        }
+
+        button:disabled {
+            background: #ccc !important;
+            color: #666 !important;
+            cursor: not-allowed;
+        }
+
+        .timbre {
+            background: #d71920;
+            color: white;
+            font-weight: bold;
+        }
+
+        .secundario {
+            background: #ececec;
+            color: #333;
+        }
+
+        #respuesta {
+            margin-top: 20px;
+            font-weight: bold;
+            min-height: 24px;
+        }
+
+        hr {
+            margin: 30px 0;
+            border: 0;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <img src="logo-vistony.png" class="logo" alt="Logo Vistony">
+    <div id="estado" class="estado">⏳ Cargando estado del sistema...</div>
+
+    <h2>Bienvenido</h2>
+    <p>Si necesita atención presione el botón.</p>
+
+    <button class="timbre" onclick="timbre()">
+        🔔 ESTOY EN LA PUERTA
+    </button>
+
+    <hr>
+
+    <h3>📩 Dejar un mensaje</h3>
+    <input id="nombre" placeholder="Nombre">
+    <input id="empresa" placeholder="Empresa">
+    <input id="telefono" placeholder="Teléfono">
+    <textarea id="mensaje" placeholder="Escriba su mensaje..."></textarea>
+
+    <button class="secundario" onclick="enviarMensaje()">
+        📨 Enviar mensaje
+    </button>
+
+    <div id="respuesta"></div>
+</div>
 
 <script>
+    // Configuración de parámetros operativos
+    const HORA_INICIO = 8;
+    const HORA_FIN = 17;
+    const BODEGA_DISPONIBLE = true; 
+    const TIEMPO_BLOQUEO = 30; // Segundos que se bloquea el timbre tras usarlo
 
-const HORA_INICIO = 8;
-const HORA_FIN = 17;
-const BODEGA_DISPONIBLE = true;
+    // Determina automáticamente si está dentro del horario laboral (Lun-Vie de 08:00 a 16:59)
+    function esHorarioLaboral() {
+        const ahora = new Date();
+        const hora = ahora.getHours();
+        const diaSemana = ahora.getDay(); // 0 = Domingo, 6 = Sábado, 1-5 = Lunes a Viernes
 
-// Variable global para controlar el tiempo de bloqueo del timbre (en segundos)
-const TIEMPO_BLOQUEO = 30; 
-
-function actualizarEstado(){
-    const ahora = new Date();
-    const hora = ahora.getHours();
-    let texto = "";
-
-    if(hora >= HORA_INICIO && hora < HORA_FIN){
-        texto += "🟢 Horario de atención<br>";
-    } else {
-        texto += "🔴 Fuera de horario<br>";
-    }
-
-    if(BODEGA_DISPONIBLE){
-        texto += "📦 Bodega disponible";
-    } else {
-        texto += "⚠️ No hay personal en bodega";
-    }
-
-    document.getElementById("estado").innerHTML = texto;
-}
-
-actualizarEstado();
-
-// Función auxiliar para borrar los mensajes de respuesta automáticamente
-function limpiarRespuesta(ms = 5000) {
-    setTimeout(() => {
-        document.getElementById("respuesta").innerHTML = "";
-    }, ms);
-}
-
-async function timbre(){
-    const botonTimbre = document.querySelector(".timbre");
-    const respuesta = document.getElementById("respuesta");
-    const horaActual = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
-
-    // Deshabilitamos el botón inmediatamente para evitar doble click
-    botonTimbre.disabled = true;
-    respuesta.innerHTML = "⏳ Enviando aviso...";
-
-    try {
-        const r = await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                mensaje: `🔔 *¡ALERTA DE TIMBRE!*\n👤 Un cliente ha llegado y espera en la puerta principal.\n⏰ Hora: ${horaActual}`
-            })
-        });
-
-        if(r.ok){
-            respuesta.innerHTML = "✅ Aviso enviado correctamente. Por favor, espere.";
-            
-            // Inicia cuenta regresiva en el botón antes de permitir tocar otra vez
-            let segundosRestantes = TIEMPO_BLOQUEO;
-            const intervalo = setInterval(() => {
-                segundosRestantes--;
-                botonTimbre.innerHTML = `⏳ ESPERE (${segundosRestantes}s)`;
-                if(segundosRestantes <= 0) {
-                    clearInterval(intervalo);
-                    botonTimbre.disabled = false;
-                    botonTimbre.innerHTML = "🔔 ESTOY EN LA PUERTA";
-                }
-            }, 1000);
-
-        } else {
-            respuesta.innerHTML = "❌ No fue posible enviar el aviso.";
-            botonTimbre.disabled = false; // Si falló, permitimos reintentar
+        // Fines de semana cerrado
+        if (diaSemana === 0 || diaSemana === 6) {
+            return false;
         }
-    } catch(e) {
-        respuesta.innerHTML = "❌ Error de conexión con el servidor.";
-        botonTimbre.disabled = false;
-    }
-    
-    limpiarRespuesta(6000);
-}
 
-async function enviarMensaje(){
-    const botonEnviar = document.querySelector(".secundario");
-    const nombre = document.getElementById("nombre").value.trim();
-    const empresa = document.getElementById("empresa").value.trim();
-    const telefono = document.getElementById("telefono").value.trim();
-    const mensaje = document.getElementById("mensaje").value.trim();
-
-    if(nombre == "" || mensaje == ""){
-        alert("Por favor, ingrese al menos su nombre y el mensaje.");
-        return;
-    }
-
-    const respuesta = document.getElementById("respuesta");
-    botonEnviar.disabled = true;
-    respuesta.innerHTML = "⏳ Enviando mensaje...";
-
-    try {
-        const r = await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                mensaje: `📩 *NUEVO MENSAJE RECIBIDO*\n\n👤 *Nombre:* ${nombre}\n🏢 *Empresa:* ${empresa || 'No especificada'}\n📞 *Teléfono:* ${telefono || 'No especificado'}\n💬 *Mensaje:* ${mensaje}`
-            })
-        });
-
-        if(r.ok){
-            respuesta.innerHTML = "✅ Mensaje enviado correctamente.";
-            
-            // Limpiar formulario
-            document.getElementById("nombre").value = "";
-            document.getElementById("empresa").value = "";
-            document.getElementById("telefono").value = "";
-            document.getElementById("mensaje").value = "";
-        } else {
-            respuesta.innerHTML = "❌ No fue posible enviar el mensaje.";
+        // Validar rango horario
+        if (hora >= HORA_INICIO && hora < HORA_FIN) {
+            return true;
         }
-    } catch(e) {
-        respuesta.innerHTML = "❌ Error de conexión.";
+
+        return false;
     }
 
-    botonEnviar.disabled = false;
-    limpiarRespuesta(5000);
-}
-</script>s
+    // Actualiza los textos y estados visuales en la interfaz
+    function actualizarEstado(){
+        const estadoDiv = document.getElementById("estado");
+        let texto = "";
+
+        if(esHorarioLaboral()){
+            texto += "🟢 Horario de atención<br>";
+            estadoDiv.style.background = "#eef8ee"; // Fondo verde suave
+        } else {
+            texto += "🔴 Fuera de horario comercial<br>";
+            estadoDiv.style.background = "#fbebe structure"; // Fondo rojizo suave
+            estadoDiv.style.backgroundColor = "#fff0f0";
+        }
+
+        if(BODEGA_DISPONIBLE){
+            texto += "📦 Bodega disponible";
+        } else {
+            texto += "⚠️ No hay personal en bodega";
+        }
+
+        estadoDiv.innerHTML = texto;
+    }
+
+    // Limpia la zona de respuestas en pantalla tras unos segundos
+    function limpiarRespuesta(ms = 5000) {
+        setTimeout(() => {
+            document.getElementById("respuesta").innerHTML = "";
+        }, ms);
+    }
+
+    // Acción del botón principal (Timbre)
+    async function timbre(){
+        const botonTimbre = document.querySelector(".timbre");
+        const respuesta = document.getElementById("respuesta");
+
+        // Validación de seguridad automática por horario
+        if (!esHorarioLaboral()) {
+            respuesta.innerHTML = "<span style='color: #d71920;'>❌ El timbre está desactivado fuera del horario de atención (Lun a Vie de 08:00 a 17:00).</span>";
+            return;
+        }
+
+        const horaActual = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+
+        botonTimbre.disabled = true;
+        respuesta.innerHTML = "⏳ Enviando aviso...";
+        respuesta.style.color = "#333";
+
+        try {
+            const r = await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    mensaje: `🔔 *¡ALERTA DE TIMBRE!*\n👤 Un cliente ha llegado y espera en la puerta principal.\n⏰ Hora: ${horaActual}`
+                })
+            });
+
+            if(r.ok){
+                respuesta.innerHTML = "<span style='color: green;'>✅ Aviso enviado correctamente. Por favor, espere.</span>";
+                
+                // Cuenta regresiva anti-spam
+                let segundosRestantes = TIEMPO_BLOQUEO;
+                const intervalo = setInterval(() => {
+                    segundosRestantes--;
+                    botonTimbre.innerHTML = `⏳ ESPERE (${segundosRestantes}s)`;
+                    if(segundosRestantes <= 0) {
+                        clearInterval(intervalo);
+                        botonTimbre.disabled = false;
+                        botonTimbre.innerHTML = "🔔 ESTOY EN LA PUERTA";
+                    }
+                }, 1000);
+
+            } else {
+                respuesta.innerHTML = "<span style='color: #d71920;'>❌ No fue posible enviar el aviso.</span>";
+                botonTimbre.disabled = false;
+            }
+        } catch(e) {
+            respuesta.innerHTML = "<span style='color: #d71920;'>❌ Error de conexión con el servidor.</span>";
+            botonTimbre.disabled = false;
+        }
+
+        limpiarRespuesta(6000);
+    }
+
+    // Acción del botón secundario (Formulario de mensaje)
+    async function enviarMensaje(){
+        const botonEnviar = document.querySelector(".secundario");
+        const nombre = document.getElementById("nombre").value.trim();
+        const empresa = document.getElementById("empresa").value.trim();
+        const telefono = document.getElementById("telefono").value.trim();
+        const mensaje = document.getElementById("mensaje").value.trim();
+
+        if(nombre == "" || mensaje == ""){
+            alert("Por favor, ingrese al menos su nombre y el mensaje.");
+            return;
+        }
+
+        const respuesta = document.getElementById("respuesta");
+        botonEnviar.disabled = true;
+        respuesta.innerHTML = "⏳ Enviando mensaje...";
+        respuesta.style.color = "#333";
+
+        try {
+            const r = await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    mensaje: `📩 *NUEVO MENSAJE RECIBIDO*\n\n👤 *Nombre:* ${nombre}\n🏢 *Empresa:* ${empresa || 'No especificada'}\n📞 *Teléfono:* ${telefono || 'No especificado'}\n💬 *Mensaje:* ${mensaje}`
+                })
+            });
+
+            if(r.ok){
+                respuesta.innerHTML = "<span style='color: green;'>✅ Mensaje enviado correctamente.</span>";
+                
+                // Limpiar inputs
+                document.getElementById("nombre").value = "";
+                document.getElementById("empresa").value = "";
+                document.getElementById("telefono").value = "";
+                document.getElementById("mensaje").value = "";
+            } else {
+                respuesta.innerHTML = "<span style='color: #d71920;'>❌ No fue posible enviar el mensaje.</span>";
+            }
+        } catch(e) {
+            respuesta.innerHTML = "<span style='color: #d71920;'>❌ Error de conexión.</span>";
+        }
+
+        botonEnviar.disabled = false;
+        limpiarRespuesta(5000);
+    }
+
+    // Inicialización del sistema
+    actualizarEstado();
+
+    // Revisa y refresca el estado en pantalla cada 60 segundos automáticamente
+    setInterval(actualizarEstado, 60000);
+</script>
 
 </body>
 </html>
