@@ -39,9 +39,37 @@
             background: #eef8ee;
             border-radius: 10px;
             padding: 15px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             font-weight: bold;
             line-height: 1.5;
+        }
+
+        .info-horario {
+            background: #fcfcfc;
+            border: 1px solid #e5e5e5;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #555;
+            line-height: 1.5;
+            text-align: left;
+        }
+
+        .reloj-text {
+            border-top: 1px dashed #ddd;
+            margin-top: 8px;
+            padding-top: 8px;
+            text-align: center;
+        }
+
+        .reloj-vivo {
+            font-weight: bold;
+            color: #333;
+            font-size: 15px;
+            letter-spacing: 0.5px;
+            display: inline-block;
+            margin-top: 2px;
         }
 
         input, textarea {
@@ -103,7 +131,19 @@
 
 <div class="card">
     <img src="logo-vistony.png" class="logo" alt="Logo Vistony">
-    <div id="estado" class="estado">⏳ Cargando estado del sistema...</div>
+    
+    <!-- Estado Dinámico (Abierto/Cerrado) -->
+    <div id="estado" class="estado">⏳ Evaluando sistema...</div>
+
+    <!-- Panel Informativo de Horarios y Reloj en Vivo -->
+    <div class="info-horario">
+        📅 <strong>Horario de Atención Bodega:</strong><br>
+        • Lun a Mar: 08:00 a 17:00 h<br>
+        • Mié a Vie: 08:00 a 16:00 h
+        <div class="reloj-text">
+            <div id="reloj" class="reloj-vivo">🕒 Cargando hora...</div>
+        </div>
+    </div>
 
     <h2>Bienvenido</h2>
     <p>Si necesita atención presione el botón.</p>
@@ -128,42 +168,56 @@
 </div>
 
 <script>
-    // Configuración de parámetros operativos
+    // Configuración operativa base
     const HORA_INICIO = 8;
-    const HORA_FIN = 17;
     const BODEGA_DISPONIBLE = true; 
-    const TIEMPO_BLOQUEO = 30; // Segundos que se bloquea el timbre tras usarlo
+    const TIEMPO_BLOQUEO = 30; 
 
-    // Determina automáticamente si está dentro del horario laboral (Lun-Vie de 08:00 a 16:59)
+    // Nueva lógica horaria dividida por días
     function esHorarioLaboral() {
         const ahora = new Date();
         const hora = ahora.getHours();
-        const diaSemana = ahora.getDay(); // 0 = Domingo, 6 = Sábado, 1-5 = Lunes a Viernes
+        const diaSemana = ahora.getDay(); // 0=Dom, 1=Lun, 2=Mar, 3=Mié, 4=Jue, 5=Vie, 6=Sáb
 
         // Fines de semana cerrado
         if (diaSemana === 0 || diaSemana === 6) {
             return false;
         }
 
-        // Validar rango horario
-        if (hora >= HORA_INICIO && hora < HORA_FIN) {
-            return true;
+        // Tramo 1: Lunes y Martes (Cierre a las 17:00)
+        if (diaSemana === 1 || diaSemana === 2) {
+            return (hora >= HORA_INICIO && hora < 17);
+        }
+
+        // Tramo 2: Miércoles, Jueves y Viernes (Cierre a las 16:00)
+        if (diaSemana === 3 || diaSemana === 4 || diaSemana === 5) {
+            return (hora >= HORA_INICIO && hora < 16);
         }
 
         return false;
     }
 
-    // Actualiza los textos y estados visuales en la interfaz
-    function actualizarEstado(){
+    // Gestiona el reloj y refresca el estado del cartel verde/rojo
+    function inicializarRelojYEstado(){
+        const ahora = new Date();
+        
+        // Renderizar Fecha y Hora en vivo para el cliente
+        const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'short' };
+        const fechaTexto = ahora.toLocaleDateString('es-CL', opcionesFecha);
+        const horaTexto = maxString = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        
+        const fechaCapitalizada = fechaTexto.charAt(0).toUpperCase() + fechaTexto.slice(1);
+        document.getElementById("reloj").innerHTML = `🕒 ${fechaCapitalizada} | ${horaTexto}`;
+
+        // Renderizar el cartel Verde/Rojo según el día y hora exactos
         const estadoDiv = document.getElementById("estado");
         let texto = "";
 
         if(esHorarioLaboral()){
             texto += "🟢 Horario de atención<br>";
-            estadoDiv.style.background = "#eef8ee"; // Fondo verde suave
+            estadoDiv.style.backgroundColor = "#eef8ee";
         } else {
             texto += "🔴 Fuera de horario comercial<br>";
-            estadoDiv.style.background = "#fbebe structure"; // Fondo rojizo suave
             estadoDiv.style.backgroundColor = "#fff0f0";
         }
 
@@ -176,43 +230,39 @@
         estadoDiv.innerHTML = texto;
     }
 
-    // Limpia la zona de respuestas en pantalla tras unos segundos
     function limpiarRespuesta(ms = 5000) {
         setTimeout(() => {
             document.getElementById("respuesta").innerHTML = "";
         }, ms);
     }
 
-    // Acción del botón principal (Timbre)
+    // Acción del Timbre
     async function timbre(){
         const botonTimbre = document.querySelector(".timbre");
         const respuesta = document.getElementById("respuesta");
 
-        // Validación de seguridad automática por horario
         if (!esHorarioLaboral()) {
-            respuesta.innerHTML = "<span style='color: #d71920;'>❌ El timbre está desactivado fuera del horario de atención (Lun a Vie de 08:00 a 17:00).</span>";
+            respuesta.innerHTML = "<span style='color: #d71920;'>❌ El timbre está desactivado fuera del horario de atención.</span>";
             return;
         }
 
-        const horaActual = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+        const horaAlerta = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
 
         botonTimbre.disabled = true;
         respuesta.innerHTML = "⏳ Enviando aviso...";
-        respuesta.style.color = "#333";
 
         try {
             const r = await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    mensaje: `🔔 *¡ALERTA DE TIMBRE!*\n👤 Un cliente ha llegado y espera en la puerta principal.\n⏰ Hora: ${horaActual}`
+                    mensaje: `🔔 *¡ALERTA DE TIMBRE!*\n👤 Un cliente ha llegado y espera en la puerta principal.\n⏰ Hora: ${horaAlerta}`
                 })
             });
 
             if(r.ok){
                 respuesta.innerHTML = "<span style='color: green;'>✅ Aviso enviado correctamente. Por favor, espere.</span>";
                 
-                // Cuenta regresiva anti-spam
                 let segundosRestantes = TIEMPO_BLOQUEO;
                 const intervalo = setInterval(() => {
                     segundosRestantes--;
@@ -236,7 +286,7 @@
         limpiarRespuesta(6000);
     }
 
-    // Acción del botón secundario (Formulario de mensaje)
+    // Acción del Formulario
     async function enviarMensaje(){
         const botonEnviar = document.querySelector(".secundario");
         const nombre = document.getElementById("nombre").value.trim();
@@ -252,7 +302,6 @@
         const respuesta = document.getElementById("respuesta");
         botonEnviar.disabled = true;
         respuesta.innerHTML = "⏳ Enviando mensaje...";
-        respuesta.style.color = "#333";
 
         try {
             const r = await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/", {
@@ -265,8 +314,6 @@
 
             if(r.ok){
                 respuesta.innerHTML = "<span style='color: green;'>✅ Mensaje enviado correctamente.</span>";
-                
-                // Limpiar inputs
                 document.getElementById("nombre").value = "";
                 document.getElementById("empresa").value = "";
                 document.getElementById("telefono").value = "";
@@ -282,11 +329,11 @@
         limpiarRespuesta(5000);
     }
 
-    // Inicialización del sistema
-    actualizarEstado();
+    // Ejecución inicial
+    inicializarRelojYEstado();
 
-    // Revisa y refresca el estado en pantalla cada 60 segundos automáticamente
-    setInterval(actualizarEstado, 60000);
+    // Actualización precisa cada 1 segundo
+    setInterval(inicializarRelojYEstado, 1000);
 </script>
 
 </body>
