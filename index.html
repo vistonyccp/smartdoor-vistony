@@ -5,126 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartDoor Vistony</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
-
+        * { box-sizing: border-box; }
         body {
-            margin: 0;
-            font-family: Arial, Helvetica, sans-serif;
-            background: #f2f2f2;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            margin: 0; font-family: Arial, Helvetica, sans-serif; background: #f2f2f2;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
         }
-
         .card {
-            width: 95%;
-            max-width: 480px;
-            background: white;
-            border-radius: 18px;
-            padding: 30px;
-            box-shadow: 0 5px 20px rgba(0,0,0,.15);
-            text-align: center;
+            width: 95%; max-width: 480px; background: white; border-radius: 18px;
+            padding: 30px; box-shadow: 0 5px 20px rgba(0,0,0,.15); text-align: center;
         }
-
-        .logo {
-            width: 240px;
-            max-width: 100%;
-            margin-bottom: 20px;
-        }
-
+        .logo { width: 240px; max-width: 100%; margin-bottom: 20px; }
         .estado {
-            background: #eef8ee;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-            font-weight: bold;
-            line-height: 1.5;
+            background: #eef8ee; border-radius: 10px; padding: 15px;
+            margin-bottom: 15px; font-weight: bold; line-height: 1.5; transition: background 0.3s ease;
         }
-
         .info-horario {
-            background: #fcfcfc;
-            border: 1px solid #e5e5e5;
-            border-radius: 10px;
-            padding: 12px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            color: #555;
-            line-height: 1.5;
-            text-align: left;
+            background: #fcfcfc; border: 1px solid #e5e5e5; border-radius: 10px;
+            padding: 12px; margin-bottom: 20px; font-size: 14px; color: #555;
+            line-height: 1.5; text-align: left;
         }
-
-        .reloj-text {
-            border-top: 1px dashed #ddd;
-            margin-top: 8px;
-            padding-top: 8px;
-            text-align: center;
+        .reloj-text { border-top: 1px dashed #ddd; margin-top: 8px; padding-top: 8px; text-align: center; }
+        .reloj-vivo { font-weight: bold; color: #333; font-size: 15px; letter-spacing: 0.5px; display: inline-block; }
+        
+        /* Contenedor de la Cámara */
+        .camera-container {
+            width: 100%; max-width: 320px; height: 240px; background: #000;
+            margin: 0 auto 20px auto; border-radius: 12px; overflow: hidden;
+            position: relative; border: 3px solid #eee;
         }
-
-        .reloj-vivo {
-            font-weight: bold;
-            color: #333;
-            font-size: 15px;
-            letter-spacing: 0.5px;
-            display: inline-block;
-            margin-top: 2px;
-        }
-
-        input, textarea {
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            font-size: 15px;
-        }
-
-        textarea {
-            height: 100px;
-            resize: none;
-        }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        canvas { display: none; } /* Oculto, procesa la imagen en segundo plano */
 
         button {
-            width: 100%;
-            padding: 16px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 18px;
-            margin-top: 15px;
+            width: 100%; padding: 16px; border: none; border-radius: 10px;
+            cursor: pointer; font-size: 18px; font-weight: bold; margin-top: 15px;
             transition: background 0.3s ease;
         }
-
-        button:disabled {
-            background: #ccc !important;
-            color: #666 !important;
-            cursor: not-allowed;
-        }
-
-        .timbre {
-            background: #d71920;
-            color: white;
-            font-weight: bold;
-        }
-
-        .secundario {
-            background: #ececec;
-            color: #333;
-        }
-
-        #respuesta {
-            margin-top: 20px;
-            font-weight: bold;
-            min-height: 24px;
-        }
-
-        hr {
-            margin: 30px 0;
-            border: 0;
-            border-top: 1px solid #eee;
-        }
+        button:disabled { background: #ccc !important; color: #666 !important; cursor: not-allowed; }
+        .timbre { background: #d71920; color: white; }
+        #respuesta { margin-top: 20px; font-weight: bold; min-height: 24px; }
     </style>
 </head>
 <body>
@@ -132,10 +51,10 @@
 <div class="card">
     <img src="logo-vistony.png" class="logo" alt="Logo Vistony">
     
-    <!-- Estado Dinámico (Abierto/Cerrado) -->
-    <div id="estado" class="estado">⏳ Evaluando sistema...</div>
+    <!-- Estado Comercial Dinámico -->
+    <div id="estado" class="estado">⏳ Evaluando estado...</div>
 
-    <!-- Panel Informativo de Horarios y Reloj en Vivo -->
+    <!-- Panel de Horarios Oficiales -->
     <div class="info-horario">
         📅 <strong>Horario de Atención Bodega:</strong><br>
         • Lun a Mar: 08:00 a 17:00 h<br>
@@ -146,195 +65,162 @@
     </div>
 
     <h2>Bienvenido</h2>
-    <p>Si necesita atención presione el botón.</p>
+    <p>Por favor, ubíquese frente a la pantalla y presione el botón para avisar su llegada.</p>
 
-    <button class="timbre" onclick="timbre()">
-        🔔 ESTOY EN LA PUERTA
-    </button>
+    <!-- Vista en vivo de la tablet -->
+    <div class="camera-container">
+        <video id="video" autoplay playsinline muted></video>
+    </div>
+    
+    <!-- Capturador de resolución fija controlada para evitar imágenes pesadas -->
+    <canvas id="canvas" width="640" height="480"></canvas>
 
-    <hr>
-
-    <h3>📩 Dejar un mensaje</h3>
-    <input id="nombre" placeholder="Nombre">
-    <input id="empresa" placeholder="Empresa">
-    <input id="telefono" placeholder="Teléfono">
-    <textarea id="mensaje" placeholder="Escriba su mensaje..."></textarea>
-
-    <button class="secundario" onclick="enviarMensaje()">
-        📨 Enviar mensaje
+    <button class="timbre" onclick="tomarFotoYTimbrar()">
+        🔔 CAPTURAR FOTO Y AVISAR
     </button>
 
     <div id="respuesta"></div>
 </div>
 
 <script>
-    // Configuración operativa base
-    const HORA_INICIO = 8;
-    const BODEGA_DISPONIBLE = true; 
-    const TIEMPO_BLOQUEO = 30; 
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const respuesta = document.getElementById('respuesta');
+    const botonTimbre = document.querySelector('.timbre');
 
-    // Nueva lógica horaria dividida por días
+    // CONFIGURACIÓN CENTRAL OPERATIVA
+    const HORA_INICIO = 8;
+    const TIEMPO_BLOQUEO = 30; 
+    const BODEGA_DISPONIBLE = true; // Cambiar a false en caso de emergencia extrema
+
+    // 1. CONTROL DE HORARIOS AUTOMÁTICOS
     function esHorarioLaboral() {
         const ahora = new Date();
         const hora = ahora.getHours();
         const diaSemana = ahora.getDay(); // 0=Dom, 1=Lun, 2=Mar, 3=Mié, 4=Jue, 5=Vie, 6=Sáb
 
-        // Fines de semana cerrado
-        if (diaSemana === 0 || diaSemana === 6) {
-            return false;
-        }
+        if (diaSemana === 0 || diaSemana === 6) return false;
 
-        // Tramo 1: Lunes y Martes (Cierre a las 17:00)
+        // Lun y Mar (Cierre 17:00)
         if (diaSemana === 1 || diaSemana === 2) {
             return (hora >= HORA_INICIO && hora < 17);
         }
-
-        // Tramo 2: Miércoles, Jueves y Viernes (Cierre a las 16:00)
+        // Mié, Jue y Vie (Cierre 16:00)
         if (diaSemana === 3 || diaSemana === 4 || diaSemana === 5) {
             return (hora >= HORA_INICIO && hora < 16);
         }
-
         return false;
     }
 
-    // Gestiona el reloj y refresca el estado del cartel verde/rojo
-    function inicializarRelojYEstado(){
+    // 2. ENTRADA EN VIVO DE RELOJ Y BANDERAS DE INHIBICIÓN
+    function inicializarRelojYEstado() {
         const ahora = new Date();
         
-        // Renderizar Fecha y Hora en vivo para el cliente
+        // Reloj en pantalla
         const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'short' };
         const fechaTexto = ahora.toLocaleDateString('es-CL', opcionesFecha);
-        const horaTexto = maxString = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        
-        const fechaCapitalizada = fechaTexto.charAt(0).toUpperCase() + fechaTexto.slice(1);
-        document.getElementById("reloj").innerHTML = `🕒 ${fechaCapitalizada} | ${horaTexto}`;
+        const horaTexto = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        document.getElementById("reloj").innerHTML = `🕒 ${fechaTexto.charAt(0).toUpperCase() + fechaTexto.slice(1)} | ${horaTexto}`;
 
-        // Renderizar el cartel Verde/Rojo según el día y hora exactos
+        // Control visual y de botones
         const estadoDiv = document.getElementById("estado");
-        let texto = "";
 
-        if(esHorarioLaboral()){
-            texto += "🟢 Horario de atención<br>";
-            estadoDiv.style.backgroundColor = "#eef8ee";
-        } else {
-            texto += "🔴 Fuera de horario comercial<br>";
+        if (!BODEGA_DISPONIBLE) {
+            estadoDiv.innerHTML = "⚠️ Cerrado por fuerza mayor<br>📦 Bodega no operativa temporalmente";
             estadoDiv.style.backgroundColor = "#fff0f0";
-        }
-
-        if(BODEGA_DISPONIBLE){
-            texto += "📦 Bodega disponible";
+            estadoDiv.style.color = "#d71920";
+            if (botonTimbre.innerHTML === "🔔 CAPTURAR FOTO Y AVISAR") botonTimbre.disabled = true;
         } else {
-            texto += "⚠️ No hay personal en bodega";
+            estadoDiv.style.color = "#000";
+            if (esHorarioLaboral()) {
+                estadoDiv.innerHTML = "🟢 Horario de atención<br>📦 Bodega disponible";
+                estadoDiv.style.backgroundColor = "#eef8ee";
+                if (botonTimbre.innerHTML === "🔔 CAPTURAR FOTO Y AVISAR") botonTimbre.disabled = false;
+            } else {
+                estadoDiv.innerHTML = "🔴 Fuera de horario comercial<br>⚠️ No hay personal en bodega";
+                estadoDiv.style.backgroundColor = "#fff0f0";
+                if (botonTimbre.innerHTML === "🔔 CAPTURAR FOTO Y AVISAR") botonTimbre.disabled = true;
+            }
         }
-
-        estadoDiv.innerHTML = texto;
     }
 
-    function limpiarRespuesta(ms = 5000) {
-        setTimeout(() => {
-            document.getElementById("respuesta").innerHTML = "";
-        }, ms);
+    // Activar flujo de cámara
+    async function iniciarCamara() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { width: 640, height: 480, facingMode: "user" }, 
+                audio: false 
+            });
+            video.srcObject = stream;
+        } catch (error) {
+            respuesta.innerHTML = "<span style='color:red;'>⚠️ Error: Requiere acceso a la cámara.</span>";
+            botonTimbre.disabled = true;
+        }
     }
 
-    // Acción del Timbre
-    async function timbre(){
-        const botonTimbre = document.querySelector(".timbre");
-        const respuesta = document.getElementById("respuesta");
+    iniciarCamara();
+    inicializarRelojYEstado();
+    setInterval(inicializarRelojYEstado, 1000); // Sincroniza reloj e interfaz cada segundo
 
-        if (!esHorarioLaboral()) {
-            respuesta.innerHTML = "<span style='color: #d71920;'>❌ El timbre está desactivado fuera del horario de atención.</span>";
+    // 3. CAPTURA Y TRANSMISIÓN BINARIA VIA POST
+    async function tomarFotoYTimbrar() {
+        if (!BODEGA_DISPONIBLE || !esHorarioLaboral()) {
+            respuesta.innerHTML = "<span style='color:red;'>❌ Sistema fuera de servicio en este momento.</span>";
             return;
         }
-
-        const horaAlerta = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
 
         botonTimbre.disabled = true;
-        respuesta.innerHTML = "⏳ Enviando aviso...";
+        respuesta.innerHTML = "⏳ Capturando fotografía y enviando aviso...";
+        respuesta.style.color = "#333";
 
-        try {
-            const r = await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    mensaje: `🔔 *¡ALERTA DE TIMBRE!*\n👤 Un cliente ha llegado y espera en la puerta principal.\n⏰ Hora: ${horaAlerta}`
-                })
-            });
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            if(r.ok){
-                respuesta.innerHTML = "<span style='color: green;'>✅ Aviso enviado correctamente. Por favor, espere.</span>";
-                
-                let segundosRestantes = TIEMPO_BLOQUEO;
-                const intervalo = setInterval(() => {
-                    segundosRestantes--;
-                    botonTimbre.innerHTML = `⏳ ESPERE (${segundosRestantes}s)`;
-                    if(segundosRestantes <= 0) {
-                        clearInterval(intervalo);
-                        botonTimbre.disabled = false;
-                        botonTimbre.innerHTML = "🔔 ESTOY EN LA PUERTA";
-                    }
-                }, 1000);
+        // Compresión controlada al 60% para que vuele por la red y no rompa límites de carga
+        canvas.toBlob(async (blob) => {
+            if (!blob) {
+                respuesta.innerHTML = "<span style='color:red;'>❌ Error de procesamiento de imagen.</span>";
+                botonTimbre.disabled = false;
+                return;
+            }
 
-            } else {
-                respuesta.innerHTML = "<span style='color: #d71920;'>❌ No fue posible enviar el aviso.</span>";
+            const formData = new FormData();
+            formData.append('foto', blob, 'cliente.jpg');
+
+            try {
+                // LLAMADO AL WORKER (Sin headers forzados a mano)
+                const r = await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/", {
+                    method: "POST",
+                    body: formData 
+                });
+
+                const data = await r.json();
+
+                if (r.ok && !data.error) {
+                    respuesta.innerHTML = "<span style='color:green;'>✅ Foto enviada. Personal notificado.</span>";
+                    
+                    // Lanzar el contador visual Anti-Spam
+                    let segundosRestantes = TIEMPO_BLOQUEO;
+                    const intervalo = setInterval(() => {
+                        segundosRestantes--;
+                        botonTimbre.innerHTML = `⏳ ESPERE (${segundosRestantes}s)`;
+                        if(segundosRestantes <= 0) {
+                            clearInterval(intervalo);
+                            botonTimbre.innerHTML = "🔔 CAPTURAR FOTO Y AVISAR";
+                            inicializarRelojYEstado();
+                        }
+                    }, 1000);
+
+                } else {
+                    respuesta.innerHTML = `<span style='color:red;'>❌ Error: ${data.error || 'No se pudo enviar.'}</span>`;
+                    botonTimbre.disabled = false;
+                }
+            } catch (e) {
+                respuesta.innerHTML = "<span style='color:red;'>❌ Error de conexión con el servidor.</span>";
                 botonTimbre.disabled = false;
             }
-        } catch(e) {
-            respuesta.innerHTML = "<span style='color: #d71920;'>❌ Error de conexión con el servidor.</span>";
-            botonTimbre.disabled = false;
-        }
-
-        limpiarRespuesta(6000);
+        }, 'image/jpeg', 0.6); 
     }
-
-    // Acción del Formulario
-    async function enviarMensaje(){
-        const botonEnviar = document.querySelector(".secundario");
-        const nombre = document.getElementById("nombre").value.trim();
-        const empresa = document.getElementById("empresa").value.trim();
-        const telefono = document.getElementById("telefono").value.trim();
-        const mensaje = document.getElementById("mensaje").value.trim();
-
-        if(nombre == "" || mensaje == ""){
-            alert("Por favor, ingrese al menos su nombre y el mensaje.");
-            return;
-        }
-
-        const respuesta = document.getElementById("respuesta");
-        botonEnviar.disabled = true;
-        respuesta.innerHTML = "⏳ Enviando mensaje...";
-
-        try {
-            const r = await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    mensaje: `📩 *NUEVO MENSAJE RECIBIDO*\n\n👤 *Nombre:* ${nombre}\n🏢 *Empresa:* ${empresa || 'No especificada'}\n📞 *Teléfono:* ${telefono || 'No especificado'}\n💬 *Mensaje:* ${mensaje}`
-                })
-            });
-
-            if(r.ok){
-                respuesta.innerHTML = "<span style='color: green;'>✅ Mensaje enviado correctamente.</span>";
-                document.getElementById("nombre").value = "";
-                document.getElementById("empresa").value = "";
-                document.getElementById("telefono").value = "";
-                document.getElementById("mensaje").value = "";
-            } else {
-                respuesta.innerHTML = "<span style='color: #d71920;'>❌ No fue posible enviar el mensaje.</span>";
-            }
-        } catch(e) {
-            respuesta.innerHTML = "<span style='color: #d71920;'>❌ Error de conexión.</span>";
-        }
-
-        botonEnviar.disabled = false;
-        limpiarRespuesta(5000);
-    }
-
-    // Ejecución inicial
-    inicializarRelojYEstado();
-
-    // Actualización precisa cada 1 segundo
-    setInterval(inicializarRelojYEstado, 1000);
 </script>
-
 </body>
 </html>
