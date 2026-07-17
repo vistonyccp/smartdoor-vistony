@@ -5,337 +5,137 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SmartDoor Vistony</title>
 
-<style>
-
-*{
-    box-sizing:border-box;
-}
-
-body{
-    margin:0;
-    font-family:Arial,Helvetica,sans-serif;
-    background:#f2f2f2;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    min-height:100vh;
-}
-
-.card{
-
-    width:95%;
-    max-width:480px;
-
-    background:white;
-
-    border-radius:18px;
-
-    padding:30px;
-
-    box-shadow:0 5px 20px rgba(0,0,0,.15);
-
-    text-align:center;
-
-}
-
-.logo{
-
-    width:240px;
-
-    max-width:100%;
-
-    margin-bottom:20px;
-
-}
-
-.estado{
-
-    background:#eef8ee;
-
-    border-radius:10px;
-
-    padding:15px;
-
-    margin-bottom:20px;
-
-    font-weight:bold;
-
-    line-height:1.5;
-
-}
-
-input,textarea{
-
-    width:100%;
-
-    padding:12px;
-
-    margin-top:10px;
-
-    border-radius:8px;
-
-    border:1px solid #ccc;
-
-    font-size:15px;
-
-}
-
-textarea{
-
-    height:100px;
-
-    resize:none;
-
-}
-
-button{
-
-    width:100%;
-
-    padding:16px;
-
-    border:none;
-
-    border-radius:10px;
-
-    cursor:pointer;
-
-    font-size:18px;
-
-    margin-top:15px;
-
-}
-
-.timbre{
-
-    background:#d71920;
-
-    color:white;
-
-}
-
-.secundario{
-
-    background:#ececec;
-
-}
-
-#respuesta{
-
-    margin-top:20px;
-
-    font-weight:bold;
-
-}
-
-hr{
-
-    margin:30px 0;
-
-}
-
-</style>
-
-</head>
-
-<body>
-
-<div class="card">
-
-<img src="logo-vistony.png" class="logo">
-
-<div id="estado" class="estado"></div>
-
-<h2>Bienvenido</h2>
-
-<p>
-Si necesita atención presione el botón.
-</p>
-
-<button class="timbre" onclick="timbre()">
-🔔 ESTOY EN LA PUERTA
-</button>
-
-<hr>
-
-<h3>📩 Dejar un mensaje</h3>
-
-<input id="nombre" placeholder="Nombre">
-
-<input id="empresa" placeholder="Empresa">
-
-<input id="telefono" placeholder="Teléfono">
-
-<textarea id="mensaje" placeholder="Escriba su mensaje..."></textarea>
-
-<button class="secundario" onclick="enviarMensaje()">
-📨 Enviar mensaje
-</button>
-
-<div id="respuesta"></div>
-
-</div>
-
 <script>
 
-const HORA_INICIO=8;
-const HORA_FIN=17;
+const HORA_INICIO = 8;
+const HORA_FIN = 17;
+const BODEGA_DISPONIBLE = true;
 
-const BODEGA_DISPONIBLE=true;
+// Variable global para controlar el tiempo de bloqueo del timbre (en segundos)
+const TIEMPO_BLOQUEO = 30; 
 
 function actualizarEstado(){
+    const ahora = new Date();
+    const hora = ahora.getHours();
+    let texto = "";
 
-    const ahora=new Date();
-
-    const hora=ahora.getHours();
-
-    let texto="";
-
-    if(hora>=HORA_INICIO && hora<HORA_FIN){
-
-        texto+="🟢 Horario de atención<br>";
-
-    }else{
-
-        texto+="🔴 Fuera de horario<br>";
-
+    if(hora >= HORA_INICIO && hora < HORA_FIN){
+        texto += "🟢 Horario de atención<br>";
+    } else {
+        texto += "🔴 Fuera de horario<br>";
     }
 
     if(BODEGA_DISPONIBLE){
-
-        texto+="📦 Bodega disponible";
-
-    }else{
-
-        texto+="⚠️ No hay personal en bodega";
-
+        texto += "📦 Bodega disponible";
+    } else {
+        texto += "⚠️ No hay personal en bodega";
     }
 
-    document.getElementById("estado").innerHTML=texto;
-
+    document.getElementById("estado").innerHTML = texto;
 }
 
 actualizarEstado();
 
+// Función auxiliar para borrar los mensajes de respuesta automáticamente
+function limpiarRespuesta(ms = 5000) {
+    setTimeout(() => {
+        document.getElementById("respuesta").innerHTML = "";
+    }, ms);
+}
+
 async function timbre(){
+    const botonTimbre = document.querySelector(".timbre");
+    const respuesta = document.getElementById("respuesta");
+    const horaActual = new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
 
-    const respuesta=document.getElementById("respuesta");
+    // Deshabilitamos el botón inmediatamente para evitar doble click
+    botonTimbre.disabled = true;
+    respuesta.innerHTML = "⏳ Enviando aviso...";
 
-    respuesta.innerHTML="⏳ Enviando aviso...";
-
-    try{
-
-        const r=await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/",{
-
-            method:"POST",
-
-            headers:{
-
-                "Content-Type":"application/json"
-
+    try {
+        const r = await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
             },
-
-            body:JSON.stringify({
-
-                mensaje:"👤 Hay un cliente esperando en la puerta principal."
-
+            body: JSON.stringify({
+                mensaje: `🔔 *¡ALERTA DE TIMBRE!*\n👤 Un cliente ha llegado y espera en la puerta principal.\n⏰ Hora: ${horaActual}`
             })
-
         });
 
         if(r.ok){
+            respuesta.innerHTML = "✅ Aviso enviado correctamente. Por favor, espere.";
+            
+            // Inicia cuenta regresiva en el botón antes de permitir tocar otra vez
+            let segundosRestantes = TIEMPO_BLOQUEO;
+            const intervalo = setInterval(() => {
+                segundosRestantes--;
+                botonTimbre.innerHTML = `⏳ ESPERE (${segundosRestantes}s)`;
+                if(segundosRestantes <= 0) {
+                    clearInterval(intervalo);
+                    botonTimbre.disabled = false;
+                    botonTimbre.innerHTML = "🔔 ESTOY EN LA PUERTA";
+                }
+            }, 1000);
 
-            respuesta.innerHTML="✅ Aviso enviado correctamente.";
-
-        }else{
-
-            respuesta.innerHTML="❌ No fue posible enviar el aviso.";
-
+        } else {
+            respuesta.innerHTML = "❌ No fue posible enviar el aviso.";
+            botonTimbre.disabled = false; // Si falló, permitimos reintentar
         }
-
-    }catch(e){
-
-        respuesta.innerHTML="❌ Error de conexión.";
-
+    } catch(e) {
+        respuesta.innerHTML = "❌ Error de conexión con el servidor.";
+        botonTimbre.disabled = false;
     }
-
+    
+    limpiarRespuesta(6000);
 }
 
 async function enviarMensaje(){
+    const botonEnviar = document.querySelector(".secundario");
+    const nombre = document.getElementById("nombre").value.trim();
+    const empresa = document.getElementById("empresa").value.trim();
+    const telefono = document.getElementById("telefono").value.trim();
+    const mensaje = document.getElementById("mensaje").value.trim();
 
-    const nombre=document.getElementById("nombre").value;
-
-    const empresa=document.getElementById("empresa").value;
-
-    const telefono=document.getElementById("telefono").value;
-
-    const mensaje=document.getElementById("mensaje").value;
-
-    if(nombre=="" || mensaje==""){
-
-        alert("Ingrese al menos su nombre y un mensaje.");
-
+    if(nombre == "" || mensaje == ""){
+        alert("Por favor, ingrese al menos su nombre y el mensaje.");
         return;
-
     }
 
-    const respuesta=document.getElementById("respuesta");
+    const respuesta = document.getElementById("respuesta");
+    botonEnviar.disabled = true;
+    respuesta.innerHTML = "⏳ Enviando mensaje...";
 
-    respuesta.innerHTML="⏳ Enviando mensaje...";
-
-    try{
-
-        const r=await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/",{
-
-            method:"POST",
-
-            headers:{
-
-                "Content-Type":"application/json"
-
+    try {
+        const r = await fetch("https://smartdoor-vistony.vistonyccp.workers.dev/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
             },
-
-            body:JSON.stringify({
-
-                mensaje:
-`📩 NUEVO MENSAJE
-
-👤 ${nombre}
-
-🏢 ${empresa}
-
-📞 ${telefono}
-
-💬 ${mensaje}`
-
+            body: JSON.stringify({
+                mensaje: `📩 *NUEVO MENSAJE RECIBIDO*\n\n👤 *Nombre:* ${nombre}\n🏢 *Empresa:* ${empresa || 'No especificada'}\n📞 *Teléfono:* ${telefono || 'No especificado'}\n💬 *Mensaje:* ${mensaje}`
             })
-
         });
 
         if(r.ok){
-
-            respuesta.innerHTML="✅ Mensaje enviado correctamente.";
-
-            document.getElementById("nombre").value="";
-            document.getElementById("empresa").value="";
-            document.getElementById("telefono").value="";
-            document.getElementById("mensaje").value="";
-
-        }else{
-
-            respuesta.innerHTML="❌ No fue posible enviar el mensaje.";
-
+            respuesta.innerHTML = "✅ Mensaje enviado correctamente.";
+            
+            // Limpiar formulario
+            document.getElementById("nombre").value = "";
+            document.getElementById("empresa").value = "";
+            document.getElementById("telefono").value = "";
+            document.getElementById("mensaje").value = "";
+        } else {
+            respuesta.innerHTML = "❌ No fue posible enviar el mensaje.";
         }
-
-    }catch(e){
-
-        respuesta.innerHTML="❌ Error de conexión.";
-
+    } catch(e) {
+        respuesta.innerHTML = "❌ Error de conexión.";
     }
 
+    botonEnviar.disabled = false;
+    limpiarRespuesta(5000);
 }
-
-</script>
+</script>s
 
 </body>
 </html>
