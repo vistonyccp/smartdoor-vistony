@@ -97,7 +97,7 @@
     function inicializarRelojYEstado() {
         const ahora = new Date();
         
-        const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'short' };
+        const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'long' };
         const fechaTexto = ahora.toLocaleDateString('es-CL', opcionesFecha);
         const horaTexto = ahora.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         document.getElementById("reloj").innerHTML = `🕒 ${fechaTexto.charAt(0).toUpperCase() + fechaTexto.slice(1)} \vert{}${horaTexto}`;
@@ -129,7 +129,7 @@
     // 3. ENVÍO DEL TIMBRE
     // Coloca aquí temporalmente tus tokens
 const BOT_TOKEN = "8976992612:AAGLiEr1wax4X2wzTMtggGW6Zux4SVXXwc0"; 
-const CHAT_ID = "8976992612"; 
+const CHAT_ID = "8742076108"; 
 
 async function tocarTimbre() {
     if (!BODEGA_DISPONIBLE || !esHorarioLaboral()) {
